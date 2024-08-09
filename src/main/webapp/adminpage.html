@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            margin: 20px;
+        }
+
+        /* Tab navigation */
+        .tab {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab:hover {
+            background-color: #ddd;
+        }
+        .tab.active {
+            background-color: #ddd;
+            border-bottom: 1px solid transparent;
+        }
+
+        /* Tab content */
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+        }
+        .tabcontent.active {
+            display: block;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Button styling */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.delete-button {
+	    	background-color: #f44336; /* Red background color */
+		}
+		button.delete-button:hover {
+		    background-color: #d32f2f; /* Darker red on hover */
+		}
+		button.remove-button {
+    		background-color: #ff9800; /* Orange background color */
+		}	
+		button.remove-button:hover {
+    		background-color: #fb8c00; /* Darker orange on hover */
+		}
+		
+        /* Form styling */
+        #addResourceForm {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        #logoutButton {
+		    position: fixed;
+		    top: 10px;
+		    right: 10px;
+		    background-color: #f44336; /* Red background color */
+		    color: white;
+		    border: none;
+		    padding: 10px 20px;
+		    border-radius: 5px;
+		    cursor: pointer;
+		    font-size: 16px;
+		}
+		
+		#logoutButton:hover {
+		    background-color: #d32f2f; /* Darker red on hover */
+		}
+    </style>
+</head>
+<body>
+    <h1>Welcome <span id="username">User</span>!</h1>
+
+    <!-- Tab navigation -->
+    <div class="tab" onclick="toggleTab(event, 'allUsers')">Manage Users</div>
+    <div class="tab" onclick="toggleTab(event, 'controlUsersRoles')">Control Users Roles</div>
+    <div class="tab" onclick="toggleTab(event, 'manageRequests')">Manage Requests</div>
+    <div class="tab" onclick="toggleTab(event, 'resourcesTab')">Resources</div>
+    <div class="tab" onclick="toggleTab(event, 'updatePasswordTab')">Update Password</div>
+
+    <!-- Tab content -->
+    <div id="allUsers" class="tabcontent">
+        <h2>Manage Users</h2>
+        
+        <h3>Upload Users CSV</h3>
+	    <form id="uploadUsersCsvForm" enctype="multipart/form-data">
+	        <input type="file" id="uploadUsersCsvFile" name="file" accept=".csv" required />
+	        <button type="button" onclick="uploadCsv('users')">Upload</button>
+	    </form>
+        <table id="allUsersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="controlUsersRoles" class="tabcontent">
+        <h2>All Users</h2>
+        <table id="userTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Change Role</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="manageRequests" class="tabcontent">
+        <h2>Manage Resource Requests</h2>
+        <table id="requestTable">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>User ID</th>
+                    <th>Resource ID</th>
+                    <th>Resource Name</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="resourcesTab" class="tabcontent">
+        <h2>Manage Resources</h2>
+        <button id="addResourceButton" onclick="showAddResourceForm()">Add Resource</button>
+        
+
+        
+        <table id="resourceTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Resource Name</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Add Resource Form -->
+    <div id="addResourceForm">
+	    <h2>Add Resource</h2>
+	    
+	    <h3>Upload Resources CSV</h3>
+	    <form id="uploadResourcesCsvForm" enctype="multipart/form-data">
+	    	<input type="file" id="uploadResourcesCsvFile" name="file" accept=".csv" required />
+	    	<button type="button" onclick="uploadCsv('resources')">Upload</button>
+		</form>
+	    
+	    <form id="resourceForm">
+	        <div class="form-group">
+	            <label for="resourceName">Resource Name:</label>
+	            <input type="text" id="resourceName" required>
+	        </div>
+	        <div class="form-group">
+	            <label for="resourceDescription">Description:</label>
+	            <input type="text" id="resourceDescription" required>
+	        </div>
+	        <div class="form-group">
+	            <label for="managerOnly">For Managers Only:</label>
+	            <input type="checkbox" id="managerOnly">
+	        </div>
+	        <button type="button" onclick="addResource()">Add Resource</button>
+	    </form>
+	</div>
+	
+	<div id="updatePasswordTab" class="tabcontent">
+	    <h2>Update Password</h2>
+	    <form id="updatePasswordForm">
+	        <label for="currentPassword">Current Password:</label>
+	        <input type="password" id="currentPassword" name="currentPassword" required><br><br>
+	
+	        <label for="newPassword">New Password:</label>
+	        <input type="password" id="newPassword" name="newPassword" required><br><br>
+	
+	        <button type="button" onclick="updatePassword()">Update Password</button>
+	    </form>
+	</div>
+
+	<button id="logoutButton" onclick="logout()">Logout</button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Retrieve username from sessionStorage
+            const username = sessionStorage.getItem('username');
+            if (username) {
+                document.getElementById('username').textContent = username;
+            } else {
+                document.getElementById('username').textContent = 'Guest';
+            }
+
+            // Fetch resources on page load
+            fetchResources();
+        });
+
+        function toggleTab(event, tabName) {
+            const tabContent = document.getElementById(tabName);
+            const tabs = document.querySelectorAll('.tab');
+            
+            // Toggle the tab content
+            if (tabContent.classList.contains('active')) {
+                tabContent.classList.remove('active');
+            } else {
+                document.querySelectorAll('.tabcontent').forEach(content => content.classList.remove('active'));
+                tabContent.classList.add('active');
+                
+                // Fetch data based on active tab
+                if (tabName === 'allUsers') {
+                    fetchAllUsers();
+                } else if (tabName === 'controlUsersRoles') {
+                    fetchUsers();
+                } else if (tabName === 'manageRequests') {
+                    fetchRequests();
+                } else if (tabName === 'resourcesTab') {
+                    document.getElementById('addResourceForm').style.display = 'none';
+                    fetchResources();
+                }
+            }
+
+            // Manage tab active state
+            tabs.forEach(tab => tab.classList.remove('active'));
+            if (tabContent.classList.contains('active')) {
+                event.currentTarget.classList.add('active');
+            }
+        }
+        
+        async function fetchAllUsers() {
+            try {
+                const response = await fetch('/uam/webapi/admin/users');
+                const users = await response.json();
+                const tableBody = document.querySelector('#allUsersTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                    	 <td>${user.id}</td>
+                        <td><input type="text" value="${user.firstname}" id="firstname-${user.id}" /></td>
+                        <td><input type="text" value="${user.lastname}" id="lastname-${user.id}" /></td>
+                        <td>${user.username}</td>
+                        <td><input type="text" value="${user.email}" id="email-${user.id}" /></td>
+                        <td>${user.role}</td>
+                        <td>
+                            <button onclick="updateUser(${user.id})">Update</button>
+                            <button class="delete-button" onclick="deleteUser(${user.id})">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/uam/webapi/admin/users');
+                const users = await response.json();
+
+                const tableBody = document.querySelector('#userTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.firstname}</td>
+                        <td>${user.lastname}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>
+                            <select id="role-${user.id}">
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+                                <option value="manager" ${user.role === 'manager' ? 'selected' : ''}>Manager</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </td>
+                        <td><button onclick="changeRole(${user.id})">Change Role</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        async function changeRole(userId) {
+            const newRole = document.querySelector(`#role-${userId}`).value;
+            try {
+                const response = await fetch('/uam/webapi/admin/changerole', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: userId, role: newRole })
+                });
+                const result = await response.text();
+                alert(result);
+                fetchUsers(); // Refresh the user list
+            } catch (error) {
+                console.error('Error changing role:', error);
+            }
+        }
+
+        async function fetchRequests() {
+            try {
+                const response = await fetch('/uam/webapi/resources/allrequests');
+                const requests = await response.json();
+
+                const tableBody = document.querySelector('#requestTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                requests.forEach(request => {
+                    const row = document.createElement('tr');
+                    row.dataset.requestId = request.id;
+                    row.innerHTML = `
+                        <td>${request.username}</td>
+                        <td>${request.userId}</td>
+                        <td>${request.resourceId}</td>
+                        <td>${request.resourceName}</td>
+                        <td>${request.status}</td>
+                        <td>
+                            <button onclick="approveRequest(${request.id})">Approve</button>
+                            <button class="remove-button" onclick="rejectRequest(${request.id})">Reject</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching requests:', error);
+            }
+        }
+
+        async function approveRequest(requestId) {
+            try {
+                const response = await fetch(`/uam/webapi/resources/approve/${requestId}`, {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                alert(result);
+                fetchRequests(); // Refresh the requests list
+            } catch (error) {
+                console.error('Error approving request:', error);
+            }
+        }
+
+        async function rejectRequest(requestId) {
+            try {
+                const response = await fetch(`/uam/webapi/resources/reject/${requestId}`, {
+                    method: 'POST'
+                });
+                const result = await response.text();
+                alert(result);
+                fetchRequests(); // Refresh the requests list
+            } catch (error) {
+                console.error('Error rejecting request:', error);
+            }
+        }
+
+        function showAddResourceForm() {
+            document.getElementById('addResourceForm').style.display = 'block';
+        }
+
+        async function addResource() {
+            const name = document.getElementById('resourceName').value;
+            const description = document.getElementById('resourceDescription').value;
+            const managerOnly = document.getElementById('managerOnly').checked;
+            try {
+                const response = await fetch('/uam/webapi/resources/addresource', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, description, managerOnly  })
+                });
+                const result = await response.text();
+                alert(result);
+                fetchResources(); // Refresh the resources list
+                document.getElementById('addResourceForm').style.display = 'none'; // Hide form after submission
+            } catch (error) {
+                console.error('Error adding resource:', error);
+            }
+        }
+
+        async function fetchResources() {
+        	const username = sessionStorage.getItem('username');
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+            try {
+            	const response = await fetch(`/uam/webapi/resources/allresource?username=${encodeURIComponent(username)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const resources = await response.json();
+
+                const tableBody = document.querySelector('#resourceTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                resources.forEach(resource => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${resource.id}</td>
+                        <td>${resource.name}</td>
+                        <td>${resource.description}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching resources:', error);
+            }
+        }
+        
+        async function updateUser(userId) {
+            const firstname = document.getElementById(`firstname-${userId}`).value;
+            const lastname = document.getElementById(`lastname-${userId}`).value;
+            const email = document.getElementById(`email-${userId}`).value;
+            
+            try {
+                const response = await fetch('/uam/webapi/admin/updateuser', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: userId, firstname, lastname, email, username })
+                });
+                const result = await response.text();
+                alert(result);
+                fetchAllUsers(); // Refresh the user list
+            } catch (error) {
+                console.error('Error updating user:', error);
+            }
+        }
+
+        async function deleteUser(userId) {
+            try {
+                const response = await fetch('/uam/webapi/admin/deleteuser', {
+                	method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: userId })
+                });
+                const result = await response.text();
+                alert(result);
+                fetchAllUsers(); // Refresh the user list
+            } catch (error) {
+                console.error('Error deleting user:', error);
+            }
+        }
+        
+        async function uploadCsv(type) {
+        	const fileInputId = type === 'users' ? 'uploadUsersCsvFile' : 'uploadResourcesCsvFile';
+            const fileInput = document.getElementById(fileInputId);
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file first.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const csvData = event.target.result;
+
+                // For binary files, use readAsArrayBuffer and then convert to base64
+                const base64EncodedData = arrayBufferToBase64(event.target.result);
+
+                try {
+                    const response = await fetch('/uam/webapi/admin/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            base64Content: base64EncodedData,
+                            type: type
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('CSV file uploaded successfully!');
+                        if (type === 'users') {
+                            fetchAllUsers();
+                        } else if (type === 'resources') {
+                            fetchResources();
+                        }
+                    } else {
+                        alert('Failed to upload CSV file.');
+                    }
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                }
+            };
+
+            // Use readAsArrayBuffer for binary data
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Helper function to convert ArrayBuffer to base64
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+        
+        async function updatePassword() {
+            const username = sessionStorage.getItem('username'); // Retrieve username from sessionStorage
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+
+            if (!currentPassword || !newPassword) {
+                alert('Please fill out both fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/uam/webapi/users/updatepassword', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, currentPassword, newPassword })
+                });
+
+                const result = await response.text();
+
+                if (response.ok) {
+                    alert('Password updated successfully!');
+                    // Optionally clear the form fields
+                    document.getElementById('updatePasswordForm').reset();
+                } else {
+                    alert(result);
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('An unexpected error occurred.');
+            }
+        }
+
+        
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

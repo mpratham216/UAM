@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin: 20px;
+        }
+        /* Tab navigation */
+        .tab {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab:hover {
+            background-color: #ddd;
+        }
+        .tab.active {
+            background-color: #ddd;
+            border-bottom: 1px solid transparent;
+        }
+        /* Tab content */
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+        }
+        .tabcontent.active {
+            display: block;
+        }
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        /* Button styling */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.remove-button {
+    		background-color: #ff9800; /* Orange background color */
+		}	
+		button.remove-button:hover {
+    		background-color: #fb8c00; /* Darker orange on hover */
+		}
+		button.delete-button {
+	    	background-color: #f44336; /* Red background color */
+		}
+		button.delete-button:hover {
+		    background-color: #d32f2f; /* Darker red on hover */
+		}
+        #logoutButton {
+		    position: fixed;
+		    top: 10px;
+		    right: 10px;
+		    background-color: #f44336; /* Red background color */
+		    color: white;
+		    border: none;
+		    padding: 10px 20px;
+		    border-radius: 5px;
+		    cursor: pointer;
+		    font-size: 16px;
+		}
+		
+		#logoutButton:hover {
+		    background-color: #d32f2f; /* Darker red on hover */
+		}
+        /* Form styling */
+        #addResourceForm {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+    </style>
+
+
+<body>
+    <h1>Welcome <span id="username">User</span>!</h1>
+
+    <!-- Tab navigation -->
+    <div class="tab" onclick="toggleTab(event, 'allResourcesTab')">All Resources of Organisation</div>
+    <div class="tab" onclick="toggleTab(event, 'myResourcesTab')">My Resources</div>
+	<div class="tab" onclick="toggleTab(event, 'updatePasswordTab')">Update Password</div>
+    <!-- Tab content -->
+    <div id="allResourcesTab" class="tabcontent">
+        <h2>All Resources</h2>
+        <table id="allResourceTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="myResourcesTab" class="tabcontent">
+        <h2>My Resources</h2>
+        <table id="myResourceTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+	<div id="updatePasswordTab" class="tabcontent">
+	    <h2>Update Password</h2>
+	    <form id="updatePasswordForm">
+	        <label for="currentPassword">Current Password:</label>
+	        <input type="password" id="currentPassword" name="currentPassword" required><br><br>
+	
+	        <label for="newPassword">New Password:</label>
+	        <input type="password" id="newPassword" name="newPassword" required><br><br>
+	
+	        <button type="button" onclick="updatePassword()">Update Password</button>
+	    </form>
+	</div>
+    
+	<button id="logoutButton" onclick="logout()">Logout</button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Retrieve username from sessionStorage
+            const username = sessionStorage.getItem('username');
+            if (username) {
+                document.getElementById('username').textContent = username;
+            } else {
+                document.getElementById('username').textContent = 'Guest';
+            }
+
+            // Fetch resources on page load
+            fetchAllResources();
+            fetchMyResources(username);
+        });
+
+        function toggleTab(event, tabName) {
+            const tabContent = document.getElementById(tabName);
+            const tabs = document.querySelectorAll('.tab');
+
+            // Toggle the tab content
+            if (tabContent.classList.contains('active')) {
+                tabContent.classList.remove('active');
+            } else {
+                document.querySelectorAll('.tabcontent').forEach(content => content.classList.remove('active'));
+                tabContent.classList.add('active');
+
+                // Fetch data based on active tab
+                if (tabName === 'allResourcesTab') {
+                    fetchAllResources();
+                } else if (tabName === 'myResourcesTab') {
+                    fetchMyResources(document.getElementById('username').textContent);
+                }
+            }
+
+            // Manage tab active state
+            tabs.forEach(tab => tab.classList.remove('active'));
+            if (tabContent.classList.contains('active')) {
+                event.currentTarget.classList.add('active');
+            }
+        }
+        
+        async function updatePassword() {
+            const username = sessionStorage.getItem('username'); // Retrieve username from sessionStorage
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+
+            if (!currentPassword || !newPassword) {
+                alert('Please fill out both fields.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/uam/webapi/users/updatepassword', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, currentPassword, newPassword })
+                });
+
+                const result = await response.text();
+
+                if (response.ok) {
+                    alert('Password updated successfully!');
+                    // Optionally clear the form fields
+                    document.getElementById('updatePasswordForm').reset();
+                } else {
+                    alert(result);
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('An unexpected error occurred.');
+            }
+        }
+
+
+        async function fetchAllResources() {
+        	const username = sessionStorage.getItem('username');
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+            try {
+            	const response = await fetch(`/uam/webapi/resources/allresource?username=${encodeURIComponent(username)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const resources = await response.json();
+                const tableBody = document.querySelector('#allResourceTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+                resources.forEach(resource => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${resource.id}</td>
+                        <td>${resource.name}</td>
+                        <td>${resource.description}</td>
+                        <td><button onclick="requestResource(${resource.id})">Request</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching resources:', error);
+            }
+        }
+
+        async function fetchMyResources() {
+            const username = sessionStorage.getItem('username'); // Retrieve username from sessionStorage
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/uam/webapi/resources/myresources?username=${encodeURIComponent(username)}`);
+                const resources = await response.json();
+
+                const tableBody = document.querySelector('#myResourceTable tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+				
+                resources.forEach(resource => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${resource.id}</td>
+                        <td>${resource.name}</td>
+                        <td>${resource.description}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching resources:', error);
+            }
+        }
+
+        async function requestResource(resourceId) {
+            const username = sessionStorage.getItem('username'); // Retrieve username from sessionStorage
+            if (!username) {
+                alert('User is not logged in.');
+                return;
+            }
+
+            const requestButton = document.getElementById(`request-button-${resourceId}`); // Assuming each request button has an ID
+
+            try {
+                // Disable the button to prevent multiple clicks
+                if (requestButton) {
+                    requestButton.disabled = true;
+                }
+
+                const response = await fetch('/uam/webapi/resources/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ resourceId, username })
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    alert(result);
+                    fetchMyResources(username); // Refresh the requests list
+                } else if (response.status === 409) { // Conflict status code for duplicate request
+                    alert('You have already requested this resource.');
+                } else {
+                    alert('An error occurred while processing your request.');
+                }
+            } catch (error) {
+                console.error('Error requesting resource:', error);
+                alert('An unexpected error occurred.');
+            } finally {
+                // Re-enable the button after the request is processed
+                if (requestButton) {
+                    requestButton.disabled = false;
+                }
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
