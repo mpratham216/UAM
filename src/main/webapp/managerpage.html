@@ -361,28 +361,48 @@
         }
         
         async function fetchAllResources() {
-        	const username = sessionStorage.getItem('username');
+            const username = sessionStorage.getItem('username');
             if (!username) {
                 alert('User is not logged in.');
                 return;
             }
             try {
-            	const response = await fetch(`/uam/webapi/resources/allresource?username=${encodeURIComponent(username)}`, {
+                const response = await fetch(`/uam/webapi/resources/allresource?username=${encodeURIComponent(username)}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
                 const resources = await response.json();
+                
+                // Fetch user's requests to determine the status
+                const requestResponse = await fetch(`/uam/webapi/resources/myrequests?username=${encodeURIComponent(username)}`);
+                const requests = await requestResponse.json();
+                
                 const tableBody = document.querySelector('#allResourceTable tbody');
                 tableBody.innerHTML = ''; // Clear existing rows
+                
                 resources.forEach(resource => {
+                    const request = requests.find(req => req.resourceId === resource.id);
+                    let actionHtml;
+                    if (request) {
+                        // If request exists, show status
+                        if (request.status === 'REJECTED') {
+                            actionHtml = `<button id="request-button-${resource.id}" onclick="requestResource(${resource.id})">Request Again</button>`;
+                        } else {
+                            actionHtml = `<span>${request.status}</span>`;
+                        }
+                    } else {
+                        // If no request exists, show request button
+                        actionHtml = `<button id="request-button-${resource.id}" onclick="requestResource(${resource.id})">Request</button>`;
+                    }
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${resource.id}</td>
                         <td>${resource.name}</td>
                         <td>${resource.description}</td>
-                        <td><button onclick="requestResource(${resource.id})">Request</button></td>
+                        <td>${actionHtml}</td>
                     `;
                     tableBody.appendChild(row);
                 });
@@ -390,6 +410,7 @@
                 console.error('Error fetching resources:', error);
             }
         }
+
 
         async function fetchMyTeam() {
             const username = sessionStorage.getItem('username');
@@ -473,7 +494,10 @@
                 if (response.ok) {
                     alert('User added to team successfully.');
                     fetchMyTeam();
-                } else {
+                }else if (response.status === 409) { // HTTP 409 Conflict for already in team
+                    const errorData = await response.json();
+                    alert(errorData.message); // Display the error message with manager's name
+                }else {
                     alert('Failed to add user to team.');
                 }
             } catch (error) {
@@ -506,16 +530,15 @@
 
 
         async function requestResource(resourceId) {
-            const username = sessionStorage.getItem('username'); // Retrieve username from sessionStorage
+            const username = sessionStorage.getItem('username');
             if (!username) {
                 alert('User is not logged in.');
                 return;
             }
 
-            const requestButton = document.getElementById(`request-button-${resourceId}`); // Assuming each request button has an ID
+            const requestButton = document.getElementById(`request-button-${resourceId}`);
 
             try {
-                // Disable the button to prevent multiple clicks
                 if (requestButton) {
                     requestButton.disabled = true;
                 }
@@ -529,11 +552,11 @@
                 });
 
                 if (response.ok) {
-                    const result = await response.text();
-                    alert(result);
-                    fetchMyResources(username); // Refresh the requests list
+                    const result = await response.json(); // Parse the JSON response
+                    alert(result.message);
+                    fetchAllResources(); // Refresh the resources list
                 } else if (response.status === 409) { // Conflict status code for duplicate request
-                    alert('You have already requested this resource.');
+                    alert('You have already requested this resource and it is not rejected.');
                 } else {
                     alert('An error occurred while processing your request.');
                 }
@@ -541,13 +564,11 @@
                 console.error('Error requesting resource:', error);
                 alert('An unexpected error occurred.');
             } finally {
-                // Re-enable the button after the request is processed
                 if (requestButton) {
                     requestButton.disabled = false;
                 }
             }
         }
-
         
         function showAddResourceForm() {
             const form = document.getElementById('addResourceForm');

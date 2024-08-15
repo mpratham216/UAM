@@ -32,25 +32,41 @@ public class ResourcesController {
 	private final ResourceService resourceService = new ResourceServiceImpl();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private static final Logger log = LoggerFactory.getLogger(ResourcesController.class);
+	
+	
 	@POST
-    @Path("addresource")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response addResource(Resources resources) throws JsonProcessingException {
-        try {
-            resourceService.addResource(resources);
-            return Response.ok(createSuccessResponse("Resource added successfully")).build();
-        } catch (Exception e) {
-            return Response.status(Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error adding resource")).build();
-        }
-    }
+	@Path("addresource")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response addResource(Resources resource) throws JsonProcessingException {
+	    try {
+	        resourceService.addResource(resource);
+	        return Response.ok(createSuccessResponse("Resource added successfully")).build();
+	    } catch (SQLException e) {
+	        if (e.getMessage().contains("Resource with this name already exists")) {
+	            return Response.status(Status.CONFLICT)
+	                           .entity(createErrorResponse("A resource with this name already exists."))
+	                           .build();
+	        } else {
+	            return Response.status(Status.INTERNAL_SERVER_ERROR)
+	                           .entity(createErrorResponse("Error adding resource"))
+	                           .build();
+	        }
+	    } catch (Exception e) {
+	        log.error("Unexpected error occurred while adding resource", e);
+	        return Response.status(Status.INTERNAL_SERVER_ERROR)
+	                       .entity(createErrorResponse("Unexpected error occurred while adding resource"))
+	                       .build();
+	    }
+	}
+
 	
 	@GET
 	@Path("allresource")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getAllResources(@QueryParam("username") String username) throws JsonProcessingException {
 		try {
-			List<Resources> resources = resourceService.getAllResources(username);
+			List<Resources> resources = resourceService.getAllResources(username);	
 			String jsonResponse = objectMapper.writeValueAsString(resources);
 			return Response.ok(jsonResponse).build();
 		}catch(Exception e) {
@@ -147,6 +163,23 @@ public class ResourcesController {
         }
     }
     
+    
+    @GET
+    @Path("myrequests")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRequestsByUser(@QueryParam("username") String username) throws JsonProcessingException {
+        try {
+            List<Request> requests = resourceService.getRequestsByUser(username);
+            String jsonResponse = objectMapper.writeValueAsString(requests);
+            return Response.ok(jsonResponse).build();
+        } catch (Exception e) {
+            log.error("Error in fetching user requests", e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                           .entity(createErrorResponse("Error getting user requests"))
+                           .build();
+        }
+    }
+
     
     
     private String createErrorResponse(String message) throws JsonProcessingException {

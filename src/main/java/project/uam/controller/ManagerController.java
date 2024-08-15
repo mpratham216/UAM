@@ -41,8 +41,16 @@ public class ManagerController {
             managerService.addUserToTeam(request.getUserId(), request.getManagerUsername());
             return Response.ok(createSuccessResponse("User added to team successfully")).build();
         } catch (Exception e) {
-        	log.error("Error in add to team method", e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST).entity(createErrorResponse("Error fetching the team")).build();
+        	String errorMessage = e.getMessage();
+            if (errorMessage != null && errorMessage.contains("User is already in the team of manager")) {
+                return Response.status(Response.Status.CONFLICT)
+                               .entity(createErrorResponse(errorMessage))
+                               .build();
+            }
+            log.error("Error in add to team method", e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST)
+                           .entity(createErrorResponse("Error adding user to team"))
+                           .build();
         }
     }
 	

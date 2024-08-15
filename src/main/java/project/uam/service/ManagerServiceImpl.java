@@ -19,17 +19,35 @@ public class ManagerServiceImpl implements ManagerService{
 
 	@Override
 	public void addUserToTeam(int userId, String managerUsername) throws Exception {
+		String checkManager = "SELECT u.manager_id, m.username as manager_name FROM users u LEFT JOIN users m ON u.manager_id = m.user_id WHERE u.user_id = ?"; 
 		String query = "UPDATE users u JOIN (SELECT user_id FROM users WHERE username = ?) m ON 1=1 SET u.manager_id = m.user_id WHERE u.user_id = ?";
-        try (Connection conn = JDBCUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, managerUsername);
-            stmt.setInt(2, userId);
-            stmt.executeUpdate();
-        } catch (Exception e) {
-        	log.error("Error in adding user to team", e.getMessage());
-        }
-		
-	}
+        
+		try (Connection conn = JDBCUtil.getConnection();
+		         PreparedStatement checkStmt = conn.prepareStatement(checkManager);
+		         PreparedStatement updateStmt = conn.prepareStatement(query)) {
+		         
+		        // Check if the user is already in a team
+		        checkStmt.setInt(1, userId);
+		        try (ResultSet rs = checkStmt.executeQuery()) {
+		            if (rs.next()) {
+		                int managerId = rs.getInt("manager_id");
+		                String managerName = rs.getString("manager_name");
+		                
+		                if (managerId != 0) {
+		                    throw new Exception("User is already in the team of manager: " + managerName);
+		                }
+		            }
+		        }
+		        
+		        // Update the user's manager if not already in a team
+		        updateStmt.setString(1, managerUsername);
+		        updateStmt.setInt(2, userId);
+		        updateStmt.executeUpdate();
+		    } catch (Exception e) {
+		        log.error("Error in adding user to team", e);
+		        throw e; // Re-throw the exception to be caught in the REST endpoint
+		    }
+		}
 
 	@Override
 	public List<User> getTeamMembers(String managerUsername) throws Exception {
@@ -58,7 +76,7 @@ public class ManagerServiceImpl implements ManagerService{
 	@Override
 	public List<User> getAllOrgUsers() throws SQLException {
 		List<User> userList = new ArrayList<>();
-	    String sql = "SELECT user_id, firstname, lastname, username, email, role, manager_id FROM users";
+	    String sql = "SELECT user_id, firstname, lastname, username, email, role, manager_id FROM users WHERE role = 'user'";
 	    
 	    try (Connection conn = JDBCUtil.getConnection(); 
 	         PreparedStatement pstmt = conn.prepareStatement(sql);

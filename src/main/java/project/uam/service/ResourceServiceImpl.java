@@ -20,17 +20,32 @@ public class ResourceServiceImpl implements ResourceService{
 	
 	@Override
 	public void addResource(Resources resource) throws SQLException {
-		
-		String sql = "INSERT INTO resources (resource_name, description, manager_only) VALUES (?, ?, ?)";
-		try(Connection conn = JDBCUtil.getConnection();PreparedStatement pstmt = conn.prepareStatement(sql)){
-			pstmt.setString(1, resource.getName());
-			pstmt.setString(2, resource.getDescription());
-			pstmt.setBoolean(3, resource.isManagerOnly());
-			pstmt.executeUpdate();
-		}catch(Exception e) {
-			log.error("Error during adding resource",e.getMessage());
-		}
+	    String checkResourceSql = "SELECT COUNT(*) FROM resources WHERE resource_name = ?";
+	    String insertResourceSql = "INSERT INTO resources (resource_name, description, manager_only) VALUES (?, ?, ?)";
+
+	    try (Connection conn = JDBCUtil.getConnection();
+	         PreparedStatement checkStmt = conn.prepareStatement(checkResourceSql);
+	         PreparedStatement insertStmt = conn.prepareStatement(insertResourceSql)) {
+
+	        // Check if the resource name already exists
+	        checkStmt.setString(1, resource.getName());
+	        try (ResultSet rs = checkStmt.executeQuery()) {
+	            if (rs.next() && rs.getInt(1) > 0) {
+	                throw new SQLException("Resource with this name already exists.");
+	            }
+	        }
+
+	        // Insert the new resource
+	        insertStmt.setString(1, resource.getName());
+	        insertStmt.setString(2, resource.getDescription());
+	        insertStmt.setBoolean(3, resource.isManagerOnly());
+	        insertStmt.executeUpdate();
+	    } catch (SQLException e) {
+	        log.error("Error during adding resource", e.getMessage());
+	        throw e; // Rethrow to be caught in the controller
+	    }
 	}
+
 
 	@Override
 	public List<Resources> getAllResources(String username) throws SQLException {
@@ -146,35 +161,43 @@ public class ResourceServiceImpl implements ResourceService{
 	@Override
 	public void requestResource(Request request) throws SQLException {
 	    String userIdSql = "SELECT user_id FROM users WHERE username = ?";
-	    String checkRequestSql = "SELECT COUNT(*) FROM requests WHERE user_id = ? AND resource_id = ?";
-	    String insertRequestSql = "INSERT INTO requests (user_id, resource_id, request_status) VALUES (?, ?, 'Pending')";
-	    
+	    String checkRequestSql = "SELECT request_status FROM requests WHERE user_id = ? AND resource_id = ?";
+	    String insertRequestSql = "INSERT INTO requests (user_id, resource_id, request_status) VALUES (?, ?, 'PENDING')";
+	    String updateRequestSql = "UPDATE requests SET request_status = 'PENDING' WHERE user_id = ? AND resource_id = ? AND request_status = 'REJECTED'";
+
 	    try (Connection conn = JDBCUtil.getConnection();
 	         PreparedStatement userIdStmt = conn.prepareStatement(userIdSql);
 	         PreparedStatement checkRequestStmt = conn.prepareStatement(checkRequestSql);
-	         PreparedStatement insertRequestStmt = conn.prepareStatement(insertRequestSql)) {
-	         
+	         PreparedStatement insertRequestStmt = conn.prepareStatement(insertRequestSql);
+	         PreparedStatement updateRequestStmt = conn.prepareStatement(updateRequestSql)) {
+
 	        // Get the user_id from username
 	        userIdStmt.setString(1, request.getUsername());
 	        try (ResultSet rs = userIdStmt.executeQuery()) {
 	            if (rs.next()) {
 	                int userId = rs.getInt("user_id");
 
-	                // Check if the request already exists
+	                // Check if the request already exists and its status
 	                checkRequestStmt.setInt(1, userId);
 	                checkRequestStmt.setInt(2, request.getResourceId());
 	                try (ResultSet checkRs = checkRequestStmt.executeQuery()) {
-	                    checkRs.next();
-	                    int count = checkRs.getInt(1);
-	                    if (count > 0) {
-	                        throw new SQLException("Resource request already exists for this user.");
+	                    if (checkRs.next()) {
+	                        String status = checkRs.getString("request_status");
+	                        if ("REJECTED".equals(status)) {
+	                            // Update the rejected request to pending again
+	                            updateRequestStmt.setInt(1, userId);
+	                            updateRequestStmt.setInt(2, request.getResourceId());
+	                            updateRequestStmt.executeUpdate();
+	                        } else {
+	                            throw new SQLException("Resource request already exists and is not rejected.");
+	                        }
+	                    } else {
+	                        // Insert the request with user_id and resource_id if no previous request exists
+	                        insertRequestStmt.setInt(1, userId);
+	                        insertRequestStmt.setInt(2, request.getResourceId());
+	                        insertRequestStmt.executeUpdate();
 	                    }
 	                }
-
-	                // Insert the request with user_id and resource_id
-	                insertRequestStmt.setInt(1, userId);
-	                insertRequestStmt.setInt(2, request.getResourceId());
-	                insertRequestStmt.executeUpdate();
 	            } else {
 	                throw new SQLException("User not found");
 	            }
@@ -184,7 +207,6 @@ public class ResourceServiceImpl implements ResourceService{
 	        throw e;
 	    }
 	}
-
 
 
 	@Override
@@ -216,5 +238,35 @@ public class ResourceServiceImpl implements ResourceService{
         }
         return resources;
 	}
+	
+	@Override
+	public List<Request> getRequestsByUser(String username) throws SQLException {
+	    List<Request> requestList = new ArrayList<>();
+	    String sql = "SELECT r.request_id, r.resource_id, r.request_status " +
+	                 "FROM requests r " +
+	                 "JOIN users u ON r.user_id = u.user_id " +
+	                 "WHERE u.username = ?";
+
+	    try (Connection conn = JDBCUtil.getConnection();
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+	        pstmt.setString(1, username);
+	        
+	        try (ResultSet rs = pstmt.executeQuery()) {
+	            while (rs.next()) {
+	                Request request = new Request();
+	                request.setId(rs.getInt("request_id"));
+	                request.setResourceId(rs.getInt("resource_id"));
+	                request.setStatus(rs.getString("request_status"));
+	                requestList.add(request);
+	            }
+	        }
+	    } catch (SQLException e) {
+	        log.error("Error in getting user requests", e.getMessage());
+	        e.printStackTrace();
+	    }
+	    return requestList;
+	}
+
 
 }

@@ -15,4 +15,5 @@ public interface ResourceService {
 	    void rejectRequest(int requestId) throws SQLException;
 	    List<Request> getAllRequests() throws SQLException;
 	    void requestResource(Request request) throws SQLException;
+	    List<Request> getRequestsByUser(String username) throws SQLException;
 }
