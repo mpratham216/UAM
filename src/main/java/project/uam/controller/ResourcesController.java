@@ -27,13 +27,15 @@ import project.uam.service.ResourceServiceImpl;
 import project.uam.service.serviceinterface.ResourceService;
 import project.uam.util.ApiResponse;
 
+
+// Handling resources.
 @Path("resources")
 public class ResourcesController {
 	private final ResourceService resourceService = new ResourceServiceImpl();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private static final Logger log = LoggerFactory.getLogger(ResourcesController.class);
 	
-	
+	// Adding resources  -- Allowed to admin role only.
 	@POST
 	@Path("addresource")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -43,6 +45,7 @@ public class ResourcesController {
 	        resourceService.addResource(resource);
 	        return Response.ok(createSuccessResponse("Resource added successfully")).build();
 	    } catch (SQLException e) {
+	    	// If resource already exist handling it.
 	        if (e.getMessage().contains("Resource with this name already exists")) {
 	            return Response.status(Status.CONFLICT)
 	                           .entity(createErrorResponse("A resource with this name already exists."))
@@ -52,6 +55,7 @@ public class ResourcesController {
 	                           .entity(createErrorResponse("Error adding resource"))
 	                           .build();
 	        }
+	        // Added an extra catch to get any exception other then SQLException.
 	    } catch (Exception e) {
 	        log.error("Unexpected error occurred while adding resource", e);
 	        return Response.status(Status.INTERNAL_SERVER_ERROR)
@@ -60,7 +64,7 @@ public class ResourcesController {
 	    }
 	}
 
-	
+	// Get all the current resources of the organisation. -- Allowed to all the roles.
 	@GET
 	@Path("allresource")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -74,6 +78,7 @@ public class ResourcesController {
 		}
 	}
 	
+	// Get your current resources. The resources that the user accquire currently.
 	@GET
 	@Path("myresources")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -94,6 +99,7 @@ public class ResourcesController {
 	    }
 	}
 	
+	// Request a resource -- For manager and normal user role.
 	@POST
     @Path("request")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -103,6 +109,7 @@ public class ResourcesController {
 	        resourceService.requestResource(request);
 	        return Response.ok(createSuccessResponse("Resource request submitted successfully.")).build();
 	    } catch (SQLException e) {
+	    	//In case resource is requested and pending.
 	        if (e.getMessage().contains("Resource request already exists")) {
 	            return Response.status(Status.CONFLICT)
 	                           .entity(createErrorResponse("Resource request already exists for this user."))
@@ -121,7 +128,7 @@ public class ResourcesController {
 	    }
 	}
 
-
+	// All requests of the organisation -- Only for Admin Role.
     @GET
     @Path("allrequests")
     @Produces(MediaType.APPLICATION_JSON)
@@ -136,6 +143,7 @@ public class ResourcesController {
         }
     }
 
+    // Approve or reject the request -- Only for admin role.
     @POST
     @Path("approve/{requestId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -164,6 +172,7 @@ public class ResourcesController {
     }
     
     
+    // Fetch user's requests to determine the status of the requests.
     @GET
     @Path("myrequests")
     @Produces(MediaType.APPLICATION_JSON)

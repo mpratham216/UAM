@@ -29,9 +29,13 @@ import project.uam.util.ManagerRequest;
 
 @Path("manager")
 public class ManagerController {
+	// Initial service injections of objects. 
 	private final ManagerService managerService = new ManagerServiceImpl();
 	private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+	// ObjectMapper for json processing.
 	private final ObjectMapper objectMapper = new ObjectMapper();
+	
+	// Add the normal user in the team of the manager.
 	@POST
     @Path("addToTeam")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -54,6 +58,8 @@ public class ManagerController {
         }
     }
 	
+	
+	// Get all team members
 	@POST
     @Path("teamMembers")
     @Produces(MediaType.APPLICATION_JSON)
@@ -67,6 +73,7 @@ public class ManagerController {
         }
     }
 	
+	//Get users of the oraganinsation having role user.
 	@GET
 	@Path("orgusers")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -80,6 +87,7 @@ public class ManagerController {
 		}
 	}
 	
+	//Remove the user from the team.
 	@DELETE
     @Path("remove")
     @Produces(MediaType.APPLICATION_JSON)
@@ -94,7 +102,7 @@ public class ManagerController {
         }
     }
  
-	
+	// Helper json converters.
 	 private String createErrorResponse(String message) throws JsonProcessingException {
 	        return objectMapper.writeValueAsString(new ApiResponse("ERROR", message));
 	    }

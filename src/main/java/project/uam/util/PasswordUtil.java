@@ -2,6 +2,7 @@ package project.uam.util;
 
 import org.mindrot.jbcrypt.BCrypt;
 
+//Hashing of the password is done by this class. This is a by default package used.
 public class PasswordUtil {
 	public static String hashPassword(String password) {
 		return BCrypt.hashpw(password, BCrypt.gensalt());

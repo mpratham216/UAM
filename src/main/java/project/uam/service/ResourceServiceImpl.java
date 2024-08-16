@@ -18,6 +18,7 @@ import project.uam.util.JDBCUtil;
 public class ResourceServiceImpl implements ResourceService{
 	private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 	
+	//Add unique resources in the organisations assets list.
 	@Override
 	public void addResource(Resources resource) throws SQLException {
 	    String checkResourceSql = "SELECT COUNT(*) FROM resources WHERE resource_name = ?";
@@ -46,12 +47,14 @@ public class ResourceServiceImpl implements ResourceService{
 	    }
 	}
 
-
+	
+	// Get all the resources of organisation.
 	@Override
 	public List<Resources> getAllResources(String username) throws SQLException {
 		List<Resources> resourceList = new ArrayList<>();
 		String userRole = getUserRoleByUsername(username);
 		String sql;
+		// Role based resources can be allocated. Few roles are for admin and manager only.
 		if ("manager".equalsIgnoreCase(userRole) || "admin".equalsIgnoreCase(userRole)) {
 			sql = "SELECT resource_id, resource_name, description FROM resources";
 		}else {
@@ -71,6 +74,8 @@ public class ResourceServiceImpl implements ResourceService{
 		return resourceList;
 	}
 	
+	
+	// Helper method to get a role by username.
 	public String getUserRoleByUsername(String username) throws SQLException {
 	    String role = null;
 	    String sql = "SELECT role FROM users WHERE username = ?";
@@ -91,7 +96,7 @@ public class ResourceServiceImpl implements ResourceService{
 	    return role;
 	}
 
-
+	// Approving a request.
 	@Override
 	public void approveRequest(int requestId) throws SQLException {
 		String sql = "UPDATE requests SET request_status = 'Approved' WHERE request_id = ?";
@@ -120,6 +125,7 @@ public class ResourceServiceImpl implements ResourceService{
 		}
 	}
 	
+	// Rejecting a request.
 	@Override
 	public void rejectRequest(int requestId) throws SQLException {
 	    String sql = "UPDATE requests SET request_status = 'Rejected' WHERE request_id = ?";
@@ -132,6 +138,7 @@ public class ResourceServiceImpl implements ResourceService{
 	    }
 	}
 
+	// Get all the requests from the request list whose stauts is PENDING.
 	@Override
 	public List<Request> getAllRequests() throws SQLException {
 		List<Request> requestList = new ArrayList<>();
@@ -157,12 +164,21 @@ public class ResourceServiceImpl implements ResourceService{
 		}
 		return requestList;
 	}
-
+	
+	// Request resources 
 	@Override
 	public void requestResource(Request request) throws SQLException {
+		// First get the user id from the username.
 	    String userIdSql = "SELECT user_id FROM users WHERE username = ?";
+	    
+	    // Then check the status of the request from on basis of user_id and resource_id.
 	    String checkRequestSql = "SELECT request_status FROM requests WHERE user_id = ? AND resource_id = ?";
+	    
+	    // For requesting INSERTING data in requests table and keeping the intial status as PENDING default.
 	    String insertRequestSql = "INSERT INTO requests (user_id, resource_id, request_status) VALUES (?, ?, 'PENDING')";
+	   
+	    // Conditional when a request is rejected.
+	    // Update the requests on the basis of admin control. So if a request is rejected a user can request the resource again so turn the status from REJECTED to PENDING.
 	    String updateRequestSql = "UPDATE requests SET request_status = 'PENDING' WHERE user_id = ? AND resource_id = ? AND request_status = 'REJECTED'";
 
 	    try (Connection conn = JDBCUtil.getConnection();
@@ -208,7 +224,7 @@ public class ResourceServiceImpl implements ResourceService{
 	    }
 	}
 
-
+	// Get the user's resources by there username. 
 	@Override
 	public List<Resources> getMyResources(String username) {
 		List<Resources> resources = new ArrayList<>();
@@ -239,6 +255,7 @@ public class ResourceServiceImpl implements ResourceService{
         return resources;
 	}
 	
+	// Fetch user's requests to determine the status
 	@Override
 	public List<Request> getRequestsByUser(String username) throws SQLException {
 	    List<Request> requestList = new ArrayList<>();

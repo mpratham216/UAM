@@ -14,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 public class UserServiceImpl implements UserService {
 	private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-
+	
+	
+	//Register the user.
 	@Override
 	public void registerUser(User user) throws SQLException {
 		String sql = "INSERT INTO USERS (firstname, lastname, username, password, email, role) VALUES(?,?,?,?,?,?)";
@@ -33,6 +35,7 @@ public class UserServiceImpl implements UserService {
 		
 	}
 	
+	//Generate unique username.
 	@Override
 	public String generateUniqueUsername(String firstname, String lastname) throws SQLException {
         String baseUsername = firstname.toLowerCase() + "." + lastname.toLowerCase();
@@ -46,7 +49,7 @@ public class UserServiceImpl implements UserService {
         return username;
     }
 
-
+	
 	@Override
 	public User getUserByUsername(String username) throws SQLException {
 		String sql = "SELECT * FROM USERS WHERE username = ?";
@@ -71,7 +74,8 @@ public class UserServiceImpl implements UserService {
 		}
 		return null;
 	}
-
+	
+	// Helper method to check if the username is taken or not.
 	@Override
 	public boolean isUsernameTaken(String username) throws SQLException {
 		String sql = "SELECT COUNT(*) FROM USERS WHERE username = ?";
@@ -89,10 +93,14 @@ public class UserServiceImpl implements UserService {
 		return false;
 	}
 
+	
+	// Update user details.
 	@Override
 	public void updateUser(User user) throws SQLException {
 		String currentUserName = getUsernameById(user.getId());
 		User currentUser = getUserByUsername(currentUserName);
+		
+		// Update user details by providing username.
 		String sql = "UPDATE users SET firstname = ?, lastname = ?, email = ? WHERE username = ?";
 		if (!currentUser.getFirstname().equals(user.getFirstname()) || !currentUser.getLastname().equals(user.getLastname())) {
 	        
@@ -128,6 +136,8 @@ public class UserServiceImpl implements UserService {
 	    }
 	}
 	
+	
+	// Helper method to get username by id.
 	public String getUsernameById(int userId) throws SQLException {
 	    String sql = "SELECT username FROM users WHERE user_id = ?";
 	    try (Connection conn = JDBCUtil.getConnection();
@@ -144,8 +154,11 @@ public class UserServiceImpl implements UserService {
 	    return null;
 	}
 
+	
+	// Delete user. Or remove user from oragnisation.
 	@Override
 	public void deleteUser(int id) throws SQLException {
+		// Delete user by id.
 		String sql = "DELETE FROM Users WHERE user_id = ?";
         try (Connection conn = JDBCUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
@@ -155,7 +168,7 @@ public class UserServiceImpl implements UserService {
         }
 		
 	}
-
+	
 	@Override
 	public List<User> getAllUsers() throws SQLException {
 		String sql = "SELECT * FROM USERS";
@@ -178,7 +191,9 @@ public class UserServiceImpl implements UserService {
 		}
 		return users;
 	}
-
+	
+	
+	// If the organisation is registering a first user then that person will be admin by default.
 	@Override
 	public boolean isFirstUser() throws SQLException {
 		String sql = "SELECT COUNT(*) FROM Users";

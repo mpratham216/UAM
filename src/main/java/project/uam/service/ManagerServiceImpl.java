@@ -16,9 +16,12 @@ import project.uam.util.JDBCUtil;
 
 public class ManagerServiceImpl implements ManagerService{
 	private static final Logger log = LoggerFactory.getLogger(ManagerServiceImpl.class);
-
+	
+	
+	// Add the user to team.
 	@Override
 	public void addUserToTeam(int userId, String managerUsername) throws Exception {
+		//
 		String checkManager = "SELECT u.manager_id, m.username as manager_name FROM users u LEFT JOIN users m ON u.manager_id = m.user_id WHERE u.user_id = ?"; 
 		String query = "UPDATE users u JOIN (SELECT user_id FROM users WHERE username = ?) m ON 1=1 SET u.manager_id = m.user_id WHERE u.user_id = ?";
         
@@ -45,10 +48,11 @@ public class ManagerServiceImpl implements ManagerService{
 		        updateStmt.executeUpdate();
 		    } catch (Exception e) {
 		        log.error("Error in adding user to team", e);
-		        throw e; // Re-throw the exception to be caught in the REST endpoint
+		        throw e; // Re-throw the exception to be caught in the controller
 		    }
 		}
 
+	//Get all team members
 	@Override
 	public List<User> getTeamMembers(String managerUsername) throws Exception {
 		List<User> teamMembers = new ArrayList<>();
@@ -72,7 +76,8 @@ public class ManagerServiceImpl implements ManagerService{
 		}
 		return teamMembers;
 	}
-
+	
+	//Get all organisation users whose role is user 
 	@Override
 	public List<User> getAllOrgUsers() throws SQLException {
 		List<User> userList = new ArrayList<>();
@@ -105,6 +110,7 @@ public class ManagerServiceImpl implements ManagerService{
 	    return userList;
 	}
 	
+	// Helper method to get a unique username by a unique user_id.
 	public String getUsernameById(int userId) throws SQLException {
 	    String sql = "SELECT username FROM users WHERE user_id = ?";
 	    try (Connection conn = JDBCUtil.getConnection();
@@ -120,7 +126,8 @@ public class ManagerServiceImpl implements ManagerService{
 	    }
 	    return null;
 	}
-
+	
+	// Method to remove user from the manager team.
 	@Override
 	public void removeUserFromTeam(int userId) throws Exception {
 		String sql = "UPDATE users SET manager_id = NULL WHERE user_id = ?";

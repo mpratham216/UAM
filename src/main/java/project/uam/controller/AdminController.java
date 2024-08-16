@@ -33,24 +33,31 @@ import project.uam.util.ApiResponse;
 
 @Path("admin")
 public class AdminController {
+	// Initial service injections of objects. 
 	private final AdminService adminService = new AdminServiceImpl();
 	private final UserService userService = new UserServiceImpl();
+	//Objectmapper is used for converting the response to JSON. -- Dependency of Jackson is added.
 	private final ObjectMapper objectMapper = new ObjectMapper();
-	
+	// Logger.
 	private static final Logger log = LoggerFactory.getLogger(AdminController.class);
-	@GET
+	// AdminAPI
+	// Get all users.
+ 	@GET
 	@Path("users")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getAllUsers() throws JsonProcessingException {
 		try {
 			List<User> users = adminService.getAllUsers();
 			String jsonResponse = objectMapper.writeValueAsString(users);
+			// returning json response to the frontend.
 			return Response.ok().entity(jsonResponse).build();
 		}catch(Exception ex) {
 			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error Fetching user")).build();
 		}
 	}
 	
+ 	
+ 	// Role change. -- Admin, manager and user roles can be changed only by admin.
 	@POST
     @Path("changerole")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -64,6 +71,8 @@ public class AdminController {
         }
     }
 	
+	
+	// Update users details . Admin Permission only.
 	@PUT
 	@Path("updateuser")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -71,7 +80,6 @@ public class AdminController {
     public Response updateUser(User user) throws JsonProcessingException {
         try {
             userService.updateUser(user);
-            
             return Response.ok(createSuccessResponse("User updated Successfully!")).build();
         } catch (Exception e) {
         	log.error("Error Updating the user", e.getMessage());
@@ -80,7 +88,7 @@ public class AdminController {
     }
 	
 	
-	
+	// Delete user.
 	@DELETE
     @Path("deleteuser")
     @Produces(MediaType.APPLICATION_JSON)
@@ -94,6 +102,8 @@ public class AdminController {
                            .build();
         }
     }
+	
+	// Upload csv file 
 	
 	@POST
 	@Path("upload")
@@ -113,6 +123,8 @@ public class AdminController {
 	}
 
 	
+	
+	// JSON CONVERTER. -- Better to use object mapper everwhere.
 	 private String createErrorResponse(String message) throws JsonProcessingException {
 	        return objectMapper.writeValueAsString(new ApiResponse("ERROR", message));
 	    }
