@@ -12,6 +12,7 @@ public interface UserService {
 	User getUserByUsername(String username) throws SQLException;
 	boolean isUsernameTaken(String username) throws SQLException;
 	void updateUser(User user) throws SQLException;
+	void updateUserDetail(String username, User user) throws SQLException;
 	void deleteUser(int id) throws SQLException;
     List<User> getAllUsers() throws SQLException;
     boolean isFirstUser() throws SQLException;

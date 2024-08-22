@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+// JDBC Connectivity is handled by this class in the whole application.
 public class JDBCUtil {
 	private static final Logger log = LoggerFactory.getLogger(JDBCUtil.class);
 	private static final String URL = "jdbc:mysql://localhost:3306/UAM_DB";

@@ -4,11 +4,16 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -151,6 +156,29 @@ public class UserController {
 	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("An error occurred while updating the password")).build();
 	    }
 	}
+	@PUT
+	@Path("updateuserdetail")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateUser(@QueryParam("username") String username, User user) throws JsonProcessingException {
+        try {
+            userService.updateUserDetail(username,user);
+            return Response.ok(createSuccessResponse("User updated Successfully!")).build();
+        } catch (Exception e) {
+        	log.error("Error Updating the user", e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error updating the user")).build();
+        }
+    }
+	
+	@POST
+    @Path("logout")
+    public Response logout(@Context HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();  // Invalidate the session
+        }
+        return Response.ok().build();
+    }
 
 	
 	 private String createErrorResponse(String message) throws JsonProcessingException {

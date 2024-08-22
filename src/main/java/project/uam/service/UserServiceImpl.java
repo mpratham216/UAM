@@ -228,5 +228,26 @@ public class UserServiceImpl implements UserService {
 		}
         return null;
 	}
+
+	@Override
+	public void updateUserDetail(String username, User user) throws SQLException {
+		String sql = "UPDATE users SET firstname = ?, lastname = ?, email = ? WHERE username = ?";
+	    
+	    try (Connection conn = JDBCUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        pstmt.setString(1, user.getFirstname());
+	        pstmt.setString(2, user.getLastname());
+	        pstmt.setString(3, user.getEmail());
+	        pstmt.setString(4, username);
+	        int affectedRows = pstmt.executeUpdate();
+	        
+	        if (affectedRows == 0) {
+	            throw new SQLException("No user found with the username: " + username);
+	        }
+	    } catch (SQLException e) {
+	        log.error("Error updating the user with username: " + username, e);
+	        throw e;
+	    }
+		
+	}
 	
 }
