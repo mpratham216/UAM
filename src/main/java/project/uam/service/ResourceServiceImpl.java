@@ -286,4 +286,33 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 
 
+	@Override
+	public void removeResource(int resourceId) throws SQLException {
+		String checkSql = "SELECT COUNT(*) FROM requests WHERE resource_id = ?";
+		String sql = "DELETE FROM resources WHERE resource_id = ?";
+		try (Connection conn = JDBCUtil.getConnection();
+				PreparedStatement checkStmt = conn.prepareStatement(checkSql);
+				PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			
+			// Check if any requests exist for this resource
+	        checkStmt.setInt(1, resourceId);
+	        try (ResultSet rs = checkStmt.executeQuery()) {
+	            if (rs.next() && rs.getInt(1) > 0) {
+	                throw new SQLException("Cannot delete resource as it has associated requests.");
+	            }
+	        }
+	        
+	        // Proceed to delete the resource if no requests exist
+			pstmt.setInt(1, resourceId);
+			int affectedRows = pstmt.executeUpdate();
+			 if (affectedRows == 0) {
+	           throw new SQLException("Resource not found or couldn't be deleted");
+	         }
+		}catch (SQLException e) {
+            log.error("Error in removing resource", e.getMessage());
+            throw e; // Re-throw the exception to be handled by the caller
+        }
+	}
+
+
 }

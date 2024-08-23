@@ -4,6 +4,7 @@ import java.util.List;
 import java.sql.SQLException;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -185,6 +186,25 @@ public class ResourcesController {
             log.error("Error in fetching user requests", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                            .entity(createErrorResponse("Error getting user requests"))
+                           .build();
+        }
+    }
+    
+    @DELETE
+    @Path("remove")
+    public Response removeResource(@QueryParam("resourceId") int resourceId) throws JsonProcessingException {
+    	try {
+            resourceService.removeResource(resourceId);
+            return Response.ok(createSuccessResponse("Resource removed successfully")).build();
+        } catch (SQLException e) {
+            log.error("Error removing resource with ID: " + resourceId, e);
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
+                           .entity(createErrorResponse("Error removing resource: " + e.getMessage()))
+                           .build();
+        } catch (Exception e) {
+            log.error("Unexpected error while removing resource with ID: " + resourceId, e);
+            return Response.status(Status.INTERNAL_SERVER_ERROR)
+                           .entity(createErrorResponse("Unexpected error occurred: " + e.getMessage()))
                            .build();
         }
     }

@@ -1,9 +1,11 @@
 package project.uam.controller;
 
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
@@ -19,10 +21,14 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import project.uam.entity.ResetPasswordRequest;
 import project.uam.entity.User;
 import project.uam.service.UserServiceImpl;
 import project.uam.service.serviceinterface.UserService;
 import project.uam.util.ApiResponse;
+import project.uam.util.EmailUtil;
+import project.uam.util.OTPUtil;
 import project.uam.util.PasswordUtil;
 import project.uam.util.RegisterResponse;
 import project.uam.util.UpdatePasswordRequest;
@@ -105,28 +111,63 @@ public class UserController {
 	}
 	
 	@POST
-	@Path("forgotPassword")
+	@Path("requestOtp")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response forgotPassword(User user) throws JsonProcessingException {
 		try {
-			User existingUser = userService.getUserByEmail(user.getEmail());
-			if(existingUser == null) {
-				return Response.status(Response.Status.NOT_FOUND).entity(createErrorResponse("Email not found")).build();
-			}
-			
-//			if (!user.getPassword().equals(user.getConfirmPassword())) {
-//                return Response.status(Response.Status.BAD_REQUEST).entity("Passwords do not match").build();
-//            }
-			
-			existingUser.setPassword(PasswordUtil.hashPassword(user.getPassword()));
-			userService.updateUser(existingUser);
-			return Response.ok().entity(createSuccessResponse("Successfully Reseted the Password")).build();
-		}catch(SQLException e) {
-			log.error("Error Handling forgot password", e.getMessage());
-			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error occured in forgot password")).build();
-		}
+	        User existingUser = userService.getUserByEmail(user.getEmail());
+	        if(existingUser == null) {
+	            return Response.status(Response.Status.NOT_FOUND).entity(createErrorResponse("Email not found")).build();
+	        }
+
+	        // Generate and send OTP
+	        String otp = OTPUtil.generateOTP(6); // Generate 6-digit OTP
+	        Date otpExpiry = new Date(System.currentTimeMillis() + (5 * 60 * 1000)); // OTP valid for 5 minutes
+	        
+	        existingUser.setOtp(otp); 
+	        existingUser.setOtpExpiry(otpExpiry);
+	        userService.updateOtp(existingUser); // Save OTP and expiry with the user record
+
+	        EmailUtil.sendEmail(existingUser.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
+
+	        return Response.ok().entity(createSuccessResponse("OTP sent to your email")).build();
+	    }catch(SQLException | MessagingException e) {
+	        log.error("Error Handling forgot password", e.getMessage());
+	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+	                .entity(createErrorResponse("Error occurred in forgot password")).build();
+	    }
 	}
+	
+	@POST
+	@Path("verifyOtpAndResetPassword")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response verifyOtpAndResetPassword(ResetPasswordRequest request) throws JsonProcessingException {
+	    try {
+	        User existingUser = userService.getUserByEmail(request.getEmail());
+	        if(existingUser == null) {
+	            return Response.status(Response.Status.NOT_FOUND).entity(createErrorResponse("Email not found")).build();
+	        }
+
+	        // Verify OTP
+	        if (!existingUser.getOtp().equals(request.getOtp()) || 
+	            existingUser.getOtpExpiry().before(new Date())) {
+	            return Response.status(Response.Status.BAD_REQUEST).entity(createErrorResponse("Invalid or expired OTP")).build();
+	        }
+	        // Reset password
+	        existingUser.setPassword(request.getNewPassword());
+	        userService.updateUserPassword(existingUser);
+
+	        return Response.ok().entity(createSuccessResponse("Password reset successfully")).build();
+	    } catch(SQLException e) {
+	        log.error("Error Handling reset password", e.getMessage());
+	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+	                .entity(createErrorResponse("Error occurred in reset password")).build();
+	    }
+	}
+
+	
 	
 	@POST
 	@Path("updatepassword")
@@ -147,8 +188,8 @@ public class UserController {
 	        }
 
 	        // Update to the new password
-	        existingUser.setPassword(PasswordUtil.hashPassword(request.getNewPassword()));
-	        userService.updateUser(existingUser);
+	        existingUser.setPassword(request.getNewPassword());
+	        userService.updateUserPassword(existingUser);
 
 	        return Response.ok().entity(createSuccessResponse("Password updated successfully")).build();
 	    } catch (SQLException e) {

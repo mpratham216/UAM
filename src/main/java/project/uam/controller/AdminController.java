@@ -124,7 +124,7 @@ public class AdminController {
 
 	
 	
-	// JSON CONVERTER. -- Better to use object mapper everwhere.
+	// JSON CONVERTER.
 	 private String createErrorResponse(String message) throws JsonProcessingException {
 	        return objectMapper.writeValueAsString(new ApiResponse("ERROR", message));
 	    }

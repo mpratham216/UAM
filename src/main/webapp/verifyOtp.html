@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Forgot Password</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            text-align: left;
+        }
+        input[type="email"],
+        input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"],
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+        }
+        button {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Verify OTP & Reset Password</h1>
+        <form id="verifyOtpForm">
+            <input type="hidden" id="email" name="email">
+            
+            <label for="otp">OTP:</label>
+            <input type="text" id="otp" name="otp" required><br><br>
+            
+            <label for="newPassword">New Password:</label>
+            <input type="password" id="newPassword" name="newPassword" required><br><br>
+            
+            <label for="confirmNewPassword">Confirm New Password:</label>
+            <input type="password" id="confirmNewPassword" name="confirmNewPassword" required><br><br>
+            
+            <input type="submit" value="Reset Password">
+        </form>
+        <button onclick="window.location.href='login.html';">Back to Login</button>
+    </div>
+    
+    <script>
+	    function validatePassword(password) {
+	        const minLength = 8;
+	        const hasDigit = /\d/;
+	        const hasLower = /[a-z]/;
+	        const hasUpper = /[A-Z]/;
+	        const hasSpecial = /[@#$%^&+=]/;
+	
+	        return password.length >= minLength &&
+	            hasDigit.test(password) &&
+	            hasLower.test(password) &&
+	            hasUpper.test(password) &&
+	            hasSpecial.test(password);
+	    }
+
+        document.getElementById('verifyOtpForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            // Check if passwords match
+            if (newPassword !== confirmNewPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            // Validate password
+            if (!validatePassword(newPassword)) {
+                alert('Password does not meet the required criteria.');
+                return;
+            }
+
+            // Gather form data
+            const formData = {
+                email: document.getElementById('email').value,
+                otp: document.getElementById('otp').value,
+                newPassword: newPassword
+            };
+
+            // Send form data to backend for OTP verification and password reset
+            fetch('/uam/webapi/users/verifyOtpAndResetPassword', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'SUCCESS') {
+                    alert('Password reset successfully!');
+                    window.location.href = 'login.html';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while resetting the password: ' + error.message);
+            });
+        });
+
+        // Pre-fill the email field with the value from the query string
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('email').value = params.get('email');
+        };
+    </script>
+</body>
+</html>

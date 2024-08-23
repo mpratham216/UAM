@@ -17,4 +17,6 @@ public interface UserService {
     List<User> getAllUsers() throws SQLException;
     boolean isFirstUser() throws SQLException;
     User getUserByEmail(String email) throws SQLException;
+    public void updateOtp(User user) throws SQLException ;
+    public void updateUserPassword(User user) throws SQLException;
 }

@@ -62,89 +62,41 @@
 <body>
     <div class="container">
         <h1>Forgot Password</h1>
-        <form id="forgotPasswordForm">
+        <form id="requestOtpForm">
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" required><br><br>
-            
-            <label for="newPassword">New Password:</label>
-            <input type="password" id="newPassword" name="newPassword" required><br><br>
-            
-            <label for="confirmNewPassword">Confirm New Password:</label>
-            <input type="password" id="confirmNewPassword" name="confirmNewPassword" required><br><br>
-            
-            <input type="submit" value="Reset Password">
+            <input type="submit" value="Request OTP">
         </form>
-        
         <button onclick="window.location.href='login.html';">Back to Login</button>
     </div>
     
     <script>
-        function validatePassword(password) {
-            const minLength = 8;
-            const hasDigit = /\d/;
-            const hasLower = /[a-z]/;
-            const hasUpper = /[A-Z]/;
-            const hasSpecial = /[@#$%^&+=]/;
-
-            return password.length >= minLength &&
-                hasDigit.test(password) &&
-                hasLower.test(password) &&
-                hasUpper.test(password) &&
-                hasSpecial.test(password);
-        }
-
-        document.getElementById('forgotPasswordForm').addEventListener('submit', function(event) {
+        document.getElementById('requestOtpForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent the default form submission
 
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            const email = document.getElementById('email').value;
 
-            // Check if passwords match
-            if (newPassword !== confirmNewPassword) {
-                alert("Passwords do not match!");
-                return;
-            }
-
-            // Validate password
-            if (!validatePassword(newPassword)) {
-                alert('Password must be at least 8 characters long and include at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=).');
-                return;
-            }
-
-            // Gather form data
-            const formData = {
-                email: document.getElementById('email').value,
-                newPassword: newPassword
-            };
-
-            // Send form data to backend using AJAX
-            fetch('webapi/users/forgotPassword', {
+            // Send email to backend to request OTP
+            fetch('/uam/webapi/users/requestOtp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ email: email })
             })
-            .then(response => {
-                const contentType = response.headers.get('Content-Type');
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json();
-                } else {
-                    return response.text().then(text => {
-                        throw new Error('Unexpected response format: ' + text);
-                    });
-                }
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.status === 'SUCCESS') {
-                    alert('Password updated successfully!');
+                    alert('OTP sent to your email!');
+                    // Redirect to OTP verification page
+                    window.location.href = `verifyOtp.html?email=${encodeURIComponent(email)}`;
                 } else {
                     alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while resetting the password: ' + error.message);
+                alert('An error occurred while requesting OTP: ' + error.message);
             });
         });
     </script>

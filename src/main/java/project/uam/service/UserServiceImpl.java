@@ -7,6 +7,7 @@ import java.util.List;
 import project.uam.entity.User;
 import project.uam.service.serviceinterface.UserService;
 import project.uam.util.JDBCUtil;
+import project.uam.util.PasswordUtil;
 import project.uam.util.UpdatePasswordRequest;
 
 import org.slf4j.Logger;
@@ -136,6 +137,45 @@ public class UserServiceImpl implements UserService {
 	    }
 	}
 	
+	@Override
+	public void updateOtp(User user) throws SQLException {
+		 String sql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE email = ?";
+		    
+	    try (Connection conn = JDBCUtil.getConnection(); 
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        pstmt.setString(1, user.getOtp());
+	        pstmt.setTimestamp(2, new Timestamp(user.getOtpExpiry().getTime()));
+	        pstmt.setString(3, user.getEmail());
+	        pstmt.executeUpdate();
+	    } catch (SQLException e) {
+	        log.error("Error updating OTP for user", e);
+	        throw e;
+	    }
+	    
+	}
+	
+	@Override
+	public void updateUserPassword(User user) throws SQLException {
+	    String sql = "UPDATE users SET password = ? WHERE user_id = ?";
+	    
+	    try (Connection conn = JDBCUtil.getConnection(); 
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	        // Hash the new password
+	        String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
+
+	        pstmt.setString(1, hashedPassword);
+	        pstmt.setInt(2, user.getId());
+	        
+	        int rowsAffected = pstmt.executeUpdate();
+	        if (rowsAffected == 0) {
+	            throw new SQLException("No user found with ID: " + user.getId());
+	        }
+	    } catch (SQLException e) {
+	        log.error("Error updating user password for user ID: " + user.getId(), e);
+	        throw e;
+	    }
+	}
+
 	
 	// Helper method to get username by id.
 	public String getUsernameById(int userId) throws SQLException {
@@ -220,6 +260,8 @@ public class UserServiceImpl implements UserService {
                     user.setPassword(rs.getString("password"));
                     user.setEmail(rs.getString("email"));
                     user.setRole(rs.getString("role"));
+                    user.setOtp(rs.getString("otp"));
+                    user.setOtpExpiry(rs.getTimestamp("otp_expiry")); 
                     return user;
                 }
             }

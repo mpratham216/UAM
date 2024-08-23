@@ -1,5 +1,7 @@
 package project.uam.entity;
 
+import java.util.Date;
+
 public class User {
 	private int id;
 	private String firstname;
@@ -10,7 +12,8 @@ public class User {
 	private String role;
 	private int managerId;
 	private String managerUsername;
-	
+	private String otp;
+	private Date otpExpiry; 
 	//getters and setters
 	public int getId() {
 		return id;
@@ -66,10 +69,18 @@ public class User {
 	public void setManagerUsername(String managerUsername) {
 		this.managerUsername = managerUsername;
 	}
-	
-	
-	
-	
+	public String getOtp() {
+		return otp;
+	}
+	public void setOtp(String otp) {
+		this.otp = otp;
+	}
+	public Date getOtpExpiry() {
+		return otpExpiry;
+	}
+	public void setOtpExpiry(Date otpExpiry) {
+		this.otpExpiry = otpExpiry;
+	}
 	
 	
 }
