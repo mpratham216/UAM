@@ -8,8 +8,8 @@ import java.util.Properties;
 public class EmailUtil {
 	
     public static void sendEmail(String recipientEmail, String subject, String message) throws MessagingException {
-        String fromEmail = "mpratham216@gmail.com";
-        String password = "haub nevv kyms orqu";
+        String fromEmail = "";
+        String password = "";
 
         Properties properties = new Properties();
         properties.put("mail.smtp.host", "smtp.gmail.com");
