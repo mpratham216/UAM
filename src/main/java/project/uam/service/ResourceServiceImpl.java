@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import project.uam.entity.Request;
 import project.uam.entity.Resources;
+import project.uam.entity.User;
 import project.uam.service.serviceinterface.ResourceService;
 import project.uam.util.JDBCUtil;
 
@@ -254,6 +255,33 @@ public class ResourceServiceImpl implements ResourceService{
         }
         return resources;
 	}
+	
+	//Get users from the resources 
+	 @Override
+    public List<User> getUsersByResource(String resourceName) throws Exception {
+        List<User> users = new ArrayList<>();
+        String query = "SELECT u.user_id, u.username " +
+		                "FROM users u " +
+		                "JOIN user_resources ur ON u.user_id = ur.user_id " +
+		                "JOIN resources r ON ur.resource_id = r.resource_id " +
+		                "WHERE r.resource_name = ?";
+
+        try (Connection connection = JDBCUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, resourceName);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                	User user = new User();
+                	user.setId(rs.getInt("user_id"));
+                    user.setUsername(rs.getString("username"));
+                    users.add(user);
+                }
+            }
+        }catch (SQLException e) {
+            log.error("Error in getting users by resource", e.getMessage());
+        }
+        return users;
+    }
 	
 	// Fetch user's requests to determine the status
 	@Override

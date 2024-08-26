@@ -4,8 +4,9 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import java.util.Properties;
 
+//Email utility class to send OTP.
 public class EmailUtil {
-
+	
     public static void sendEmail(String recipientEmail, String subject, String message) throws MessagingException {
         String fromEmail = "mpratham216@gmail.com";
         String password = "haub nevv kyms orqu";

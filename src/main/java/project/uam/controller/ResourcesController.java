@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import project.uam.entity.Request;
 import project.uam.entity.Resources;
+import project.uam.entity.User;
 import project.uam.service.ResourceServiceImpl;
 import project.uam.service.serviceinterface.ResourceService;
 import project.uam.util.ApiResponse;
@@ -99,6 +100,28 @@ public class ResourcesController {
 	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error getting users resources")).build();
 	    }
 	}
+	
+	// Get users from the username.
+	@GET
+	@Path("resourceusers")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getUsersByResource(@QueryParam("resourceName") String resourceName) throws JsonProcessingException {
+	    try {
+	        List<User> users = resourceService.getUsersByResource(resourceName);
+	        if (users.isEmpty()) {
+	            log.info("No users found for the resource");
+	            return Response.status(Response.Status.NOT_FOUND).entity(createErrorResponse("No users found for the resource")).build();
+	        }
+
+	        String jsonResponse = objectMapper.writeValueAsString(users);
+
+	        return Response.ok(jsonResponse).build();
+	    } catch (Exception e) {
+	        log.error("Error in fetching users by resource", e.getMessage());
+	        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(createErrorResponse("Error getting users by resource")).build();
+	    }
+	}
+
 	
 	// Request a resource -- For manager and normal user role.
 	@POST

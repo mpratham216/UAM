@@ -1,6 +1,7 @@
 package project.uam.service.serviceinterface;
 
 import project.uam.entity.Resources;
+import project.uam.entity.User;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -11,6 +12,7 @@ public interface ResourceService {
 	 	void addResource(Resources resource) throws SQLException;
 	    List<Resources> getAllResources(String username) throws SQLException;
 	    List<Resources> getMyResources(String username);
+	    public List<User> getUsersByResource(String resourceName) throws Exception;
 	    void approveRequest(int requestId) throws SQLException;
 	    void rejectRequest(int requestId) throws SQLException;
 	    List<Request> getAllRequests() throws SQLException;

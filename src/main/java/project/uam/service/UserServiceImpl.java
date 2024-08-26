@@ -198,16 +198,52 @@ public class UserServiceImpl implements UserService {
 	// Delete user. Or remove user from oragnisation.
 	@Override
 	public void deleteUser(int id) throws SQLException {
-		// Delete user by id.
-		String sql = "DELETE FROM Users WHERE user_id = ?";
-        try (Connection conn = JDBCUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
-            pstmt.executeUpdate();
-        }catch(SQLException e) {
-        	log.error("Error deleting in user", e.getMessage());
-        }
-		
+	    // Delete user resources, requests, and user by id.
+		String updateManagedUsersSQL = "UPDATE Users SET manager_id = NULL WHERE manager_id = ?";
+	    String deleteUserResourcesSQL = "DELETE FROM user_resources WHERE user_id = ?";
+	    String deleteUserRequestsSQL = "DELETE FROM requests WHERE user_id = ?";
+	    String deleteUserSQL = "DELETE FROM users WHERE user_id = ?";
+
+	    try (Connection conn = JDBCUtil.getConnection()) {
+	        // Disable auto-commit to ensure transactional behavior
+	        conn.setAutoCommit(false);
+	        
+	        try (PreparedStatement pstmtUpdateManagedUsers = conn.prepareStatement(updateManagedUsersSQL);
+	        	 PreparedStatement pstmtResources = conn.prepareStatement(deleteUserResourcesSQL);
+	             PreparedStatement pstmtRequests = conn.prepareStatement(deleteUserRequestsSQL);
+	             PreparedStatement pstmtUser = conn.prepareStatement(deleteUserSQL)) {
+	             
+	        	
+	        	// Update managed users to nullify the manager_id
+	            pstmtUpdateManagedUsers.setInt(1, id);
+	            pstmtUpdateManagedUsers.executeUpdate();
+	            
+	            // Delete user resources
+	            pstmtResources.setInt(1, id);
+	            pstmtResources.executeUpdate();
+	            
+	            // Delete user requests
+	            pstmtRequests.setInt(1, id);
+	            pstmtRequests.executeUpdate();
+	            
+	            // Delete user
+	            pstmtUser.setInt(1, id);
+	            pstmtUser.executeUpdate();
+	            
+	            // Commit the transaction
+	            conn.commit();
+	        } catch (SQLException e) {
+	            // Rollback the transaction in case of an error
+	            conn.rollback();
+	            log.error("Error deleting user, resources, or requests", e);
+	            throw e;
+	        } finally {
+	            // Re-enable auto-commit
+	            conn.setAutoCommit(true);
+	        }
+	    }
 	}
+
 	
 	@Override
 	public List<User> getAllUsers() throws SQLException {
